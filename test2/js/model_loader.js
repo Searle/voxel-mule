@@ -11,7 +11,8 @@ let all2= promises => {
 
 class ModelLoader {
 
-    constructor() {
+    constructor( withShadows ) {
+        this.withShadows= withShadows;
         this.defs= {};
         this.models= {};
     }
@@ -19,8 +20,6 @@ class ModelLoader {
     _loadModel( def, raw ) {
         const vox= new Vox();
         const model= vox.LoadModel(raw, def.name);
-
-console.log("MODEL", model);
 
         const chunk= new Chunk(0, 0, 0, model.sx, model.sz, model.sy, def.name, def.blockSize, def.type);
         // chunk.blockSize= this.models[name][1];
@@ -43,8 +42,7 @@ console.log("MODEL", model);
     }
 
     _addModel( def, data ) {
-        const name= def.name;
-        this.defs[name]= def;
+        this.defs[def.name]= def;
         if ( /\.vox$/.test(def.file) ) {
             this.models[def.name]= this._loadModel(def, data);
         }
@@ -71,6 +69,9 @@ console.log("MODEL", model);
 
     getMesh( name ) {
 
+// WTF Firefox? Wo sind meine this.models-Eintraege?
+// console.log("getMesh", name, this, Object.keys(this.models)); die();
+
         // FIXME: Kann static sein
         const geometry = new THREE.BoxGeometry(1, 1, 1);
 
@@ -79,13 +80,18 @@ console.log("MODEL", model);
         for ( let i= 0; i < model.blocks.length; i++ ) {
             const block= model.blocks[i];
             const rgb= (block[3] << 16) + (block[4] << 8) + block[5];
-            const material = new THREE.MeshPhongMaterial({ color: rgb });
+            const material = new THREE.MeshLambertMaterial({ color: rgb });
             const mesh = new THREE.Mesh(geometry, material);
+
+            if ( this.withShadows ) mesh.castShadow = true;
+
             mesh.position.x += block[0] - 19;
             mesh.position.y += block[1];
             mesh.position.z += block[2] - 3;
+
             mesh.matrixAutoUpdate = false;
             mesh.updateMatrix();
+
             group.add(mesh);
         }
         return group;
