@@ -21,8 +21,10 @@ class Game {
 
         container.appendChild( this.renderer.domElement );
 
-        this.stats = new Stats();
-        container.appendChild( this.stats.dom );
+        if ( this.debug.stats ) {
+            this.stats = new Stats();
+            container.appendChild( this.stats.dom );
+        }
 
         return this.modelLoader.loadModels(args.models).then(() => Promise.resolve(this));
     }
@@ -99,17 +101,21 @@ class Game {
 //        const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
 //        scene.add(light);
 
-        this.mule1Mesh= this.modelLoader.getMesh('mule1');
-        this.mule1Mesh.castShadow = true;
-        scene.add(this.mule1Mesh);
+        this.muleMesh= [
+            [ 2 ], [ 2 ], [ 0 ], [ 2 ], [ 2 ], [ 0 ],
+        ];
+        for ( let i= 0; i < 6; i++ ) {
+            this.muleMesh[i][1]= this.modelLoader.getMesh('mule' + (i + 1));
+            scene.add(this.muleMesh[i][1]);
+        }
 
         return scene;
     }
 
     _buildCamera() {
         const camera = new THREE.PerspectiveCamera(75, this.mainWidth / this.mainHeight, 1, 1000);
-        camera.position.z = 50;
-        camera.position.y = 30;
+        camera.position.z = 60;
+        camera.position.y = 3;
         return camera;
     }
 
@@ -119,16 +125,32 @@ class Game {
 
         camera.lookAt( scene.position );
 
+        let muleX= -300;
+        let camX= 0;
+
         const animate= function() {
             requestAnimationFrame(animate);
 
-//            this.mule1Mesh.rotation.y += 0.1;
+            let t= Date.now();
+            let n= Math.floor(t / 200) % 6;
+
+            for ( let i= 0; i < 6; i++ ) {
+                this.muleMesh[i][1].visible= false;
+            }
+
+            muleX += this.muleMesh[n][0];
+            if ( muleX > 300 ) muleX= -300;
+            const mesh= this.muleMesh[n][1];
+            mesh.position.x= muleX;
+            mesh.visible= true;
+            camX= (muleX + camX) / 2;
+            camera.lookAt({ x: camX, y: mesh.position.y, z: mesh.position.z });
 
 //            camera.lookAt( scene.position );
 
             this.renderer.render(scene, camera);
 
-            this.stats.update();
+            if ( this.debug.stats ) this.stats.update();
 
         }.bind(this);
 

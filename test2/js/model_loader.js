@@ -3,7 +3,7 @@
 //////////////////////////////////////////////////////////////////////
 
 let all2= promises => {
-    if ( promises.length >= 2 ) return promises.all();
+    if ( promises.length >= 2 ) return Promise.all(promises);
     if ( promises.length ) return promises[0];
     return Promise.resolve();
 };
