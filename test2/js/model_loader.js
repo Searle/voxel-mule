@@ -69,6 +69,28 @@ console.log("MODEL", model);
         return this.models[name];
     }
 
+    getMesh( name ) {
+
+        // FIXME: Kann static sein
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+
+        const model= this.models[name];
+        const group = new THREE.Group();
+        for ( let i= 0; i < model.blocks.length; i++ ) {
+            const block= model.blocks[i];
+            const rgb= (block[3] << 16) + (block[4] << 8) + block[5];
+            const material = new THREE.MeshPhongMaterial({ color: rgb });
+            const mesh = new THREE.Mesh(geometry, material);
+            mesh.position.x += block[0] - 19;
+            mesh.position.y += block[1];
+            mesh.position.z += block[2] - 3;
+            mesh.matrixAutoUpdate = false;
+            mesh.updateMatrix();
+            group.add(mesh);
+        }
+        return group;
+    }
+
     loadFiles() {
     }
 }

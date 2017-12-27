@@ -3,57 +3,76 @@ class Game {
 
     constructor() {
         this.modelLoader= new ModelLoader();
+        this.mainWidth= window.innerWidth * .8;
+        this.mainHeight= window.innerHeight * .8;
+        this.renderer = new THREE.WebGLRenderer();
     }
 
     init( args ) {
+
+        this.renderer.setSize(this.mainWidth, this.mainHeight);
+        document.body.appendChild( this.renderer.domElement );
+
         return this.modelLoader.loadModels(args.models).then(() => Promise.resolve(this));
     }
 
-    run() {
-        // modelLoader.init();
+    _buildFloor() {
+        let geometry= new THREE.BoxGeometry(100, 1, 100);
+        let material= new THREE.MeshPhongMaterial({ color: 0xff6060 });
 
+        let mesh= new THREE.Mesh(geometry, material);
+        // mesh.position.x -= 50;
+        mesh.position.y -= .5;
+        // mesh.position.z -= 50;
+        return mesh;
+    }
+
+    _buildScene() {
         const scene = new THREE.Scene();
+        scene.background = new THREE.Color( 0xffffff );
+        scene.fog = new THREE.Fog( 0xffffff, 1, 10000 );
 
-        const mainWidth= window.innerWidth * .8;
-        const mainHeight= window.innerHeight * .8;
+var axisHelper = new THREE.AxisHelper( 5 );
+scene.add( axisHelper );
 
-        const camera = new THREE.PerspectiveCamera(75, mainWidth / mainHeight, 1, 1000);
+        var light1 = new THREE.PointLight( 0xffffff, 2, 100 );
+        light1.position.set( 0, 20, 20 );
+        scene.add( light1 );
 
-        const renderer = new THREE.WebGLRenderer();
-        renderer.setSize( mainWidth, mainHeight );
-        document.body.appendChild( renderer.domElement );
+        this.floorMesh= this._buildFloor();
+        scene.add(this.floorMesh);
 
-        const geometry = new THREE.BoxGeometry( 1, 1, 1 );
-        const group = new THREE.Group();
+//        const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+//        scene.add(light);
 
-        camera.position.z = 100;
+        this.mule1Mesh= this.modelLoader.getMesh('mule1');
+        scene.add(this.mule1Mesh);
 
-        const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
-        scene.add( light );
+        return scene;
+    }
 
-        const model= this.modelLoader.getModel('mule1');
-        for ( let i= 0; i < model.blocks.length; i++ ) {
-            const block= model.blocks[i];
-            const rgb= (block[3] << 16) + (block[4] << 8) + block[5];
-            const material = new THREE.MeshPhongMaterial( { color: rgb } );
-            const cube0 = new THREE.Mesh( geometry, material );
-            cube0.position.x += block[0] - 19;
-            cube0.position.y += block[1] - 10.5;
-            cube0.position.z += block[2] - 3;
-            group.add( cube0 );
-        }
+    _buildCamera() {
+        const camera = new THREE.PerspectiveCamera(75, this.mainWidth / this.mainHeight, 1, 1000);
+        camera.position.z = 50;
+        camera.position.y = 10;
+        return camera;
+    }
 
-        scene.add( group );
+    run() {
+        const scene= this._buildScene();
+        const camera= this._buildCamera();
+
+        camera.lookAt( scene.position );
 
         const animate= function() {
             requestAnimationFrame(animate);
 
-            group.rotation.y += 0.1;
+            this.mule1Mesh.rotation.y += 0.1;
 
-            camera.lookAt( scene.position );
+//            camera.lookAt( scene.position );
 
-            renderer.render(scene, camera);
-        }
+            this.renderer.render(scene, camera);
+        }.bind(this);
 
         animate();
     }
