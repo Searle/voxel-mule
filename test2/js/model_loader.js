@@ -11,8 +11,9 @@ let all2= promises => {
 
 class ModelLoader {
 
-    constructor( withShadows ) {
+    constructor( withShadows, MeshMaterial ) {
         this.withShadows= withShadows;
+        this.MeshMaterial= MeshMaterial;
         this.defs= {};
         this.models= {};
     }
@@ -80,7 +81,7 @@ class ModelLoader {
         for ( let i= 0; i < model.blocks.length; i++ ) {
             const block= model.blocks[i];
             const rgb= (block[3] << 16) + (block[4] << 8) + block[5];
-            const material = new THREE.MeshLambertMaterial({ color: rgb });
+            const material = new this.MeshMaterial({ color: rgb });
             const mesh = new THREE.Mesh(geometry, material);
 
             if ( this.withShadows ) mesh.castShadow = true;
@@ -95,8 +96,5 @@ class ModelLoader {
             group.add(mesh);
         }
         return group;
-    }
-
-    loadFiles() {
     }
 }

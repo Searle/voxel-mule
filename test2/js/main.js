@@ -2,11 +2,17 @@
 new Game()
     .init({
         debug: {
-            lights: true,
+            // lights: true,
             // shadows: true,
             // stats: true,
         },
+
         // withShadows: true,
+
+        // meshMaterial: 'Phong',
+        // meshMaterial: 'Standard',
+        meshMaterial: 'Toon',
+
         models: {
             mule1: [ "models/mule1.vox", 1, "object" ],
             mule2: [ "models/mule2.vox", 1, "object" ],
