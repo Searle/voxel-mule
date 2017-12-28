@@ -5,6 +5,8 @@ class Game {
 
         let container= document.body;
 
+        if ( args.onCreate ) args.onCreate(this);
+
         this.withShadows= !!args.withShadows;
         this.debug= args.debug || {};
         this.MeshMaterial= args.meshMaterial ? THREE['Mesh' + args.meshMaterial + 'Material'] : THREE.MeshLambertMaterial;
@@ -27,6 +29,14 @@ class Game {
             this.stats = new Stats();
             container.appendChild( this.stats.dom );
         }
+
+        this.scene = new THREE.Scene();
+        // scene.background = new THREE.Color( 0xffffff );
+        this.scene.background = new THREE.Color( 0x99fff7 );
+        this.scene.fog = new THREE.Fog( 0xffffff, 1, 10000 );
+
+        const ambientLight = new THREE.AmbientLight(0xffffff, .5);
+        this.scene.add( ambientLight );
 
         return this.modelLoader.loadModels(args.models).then(() => Promise.resolve(this));
     }
@@ -82,27 +92,21 @@ class Game {
         }
     }
 
-    _buildScene() {
-        const scene = new THREE.Scene();
-        // scene.background = new THREE.Color( 0xffffff );
-        scene.background = new THREE.Color( 0x99fff7 );
-        scene.fog = new THREE.Fog( 0xffffff, 1, 10000 );
+    _initScene() {
 
-        const ambientLight = new THREE.AmbientLight(0xffffff, .5);
-        scene.add( ambientLight );
+        // var axisHelper = new THREE.AxisHelper( 5 );
+        // scene.add( axisHelper );
 
-// var axisHelper = new THREE.AxisHelper( 5 );
-// scene.add( axisHelper );
-
-        this._addLight1(scene);
-//        this._addLight2(scene);
+        this._addLight1(this.scene);
+        // this._addLight2(this.scene);
 
         this.floorMesh= this._buildFloor();
-        scene.add(this.floorMesh);
+        this.scene.add(this.floorMesh);
 
-//        const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
-//        scene.add(light);
+        // const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+        // this.scene.add(light);
 
+/*
         this.muleMesh= [
             [ 0 ], [ 2 ], [ 2 ], [ 4 ], [ 6 ], [ 6 ]
         ];
@@ -111,21 +115,33 @@ class Game {
             scene.add(this.muleMesh[i][1]);
         }
 
-        return scene;
+*/
+        return this.scene;
     }
 
     _buildCamera() {
         const camera = new THREE.PerspectiveCamera(75, this.mainWidth / this.mainHeight, 1, 1000);
         camera.position.z = 50;
-        camera.position.y = 3;
+        camera.position.y = 10;
         return camera;
     }
 
+    sceneAdd( mesh ) {
+        this.scene.add(mesh);
+    }
+
     run() {
-        const scene= this._buildScene();
+        const scene= this._initScene();
         const camera= this._buildCamera();
 
-        camera.lookAt( scene.position );
+        const muleMesh= [
+            [ 0 ], [ 2 ], [ 2 ], [ 4 ], [ 6 ], [ 6 ]
+        ];
+        for ( let i= 0; i < 6; i++ ) {
+            muleMesh[i][1]= this.modelLoader.getModel('mule' + (i + 1)).mesh;
+        }
+
+        // camera.lookAt( scene.position );
 
         let muleRange= 200;
         let camX= 0;
@@ -140,12 +156,12 @@ class Game {
             let n= Math.floor(muleX8 * 6 / 8);
 
             for ( let i= 0; i < 6; i++ ) {
-                this.muleMesh[i][1].visible= false;
+                muleMesh[i][1].visible= i == n;
             }
 
-            const mesh= this.muleMesh[n][1];
-            mesh.position.x= muleX - muleRange * .5 - muleX8 + this.muleMesh[n][0];
-            mesh.visible= true;
+            const mesh= muleMesh[n][1];
+            mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
+            mesh.position.y= 10.5;
 
             camX= (mesh.position.x + camX) / 2;
 

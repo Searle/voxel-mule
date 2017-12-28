@@ -39,6 +39,9 @@ class ModelLoader {
         // Remove mesh from scene (cloned later)
         chunk.build();
         chunk.mesh.visible = false;
+
+        if ( this.withShadows ) chunk.mesh.castShadow = true;
+
         return chunk;
     }
 
