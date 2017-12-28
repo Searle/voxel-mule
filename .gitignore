@@ -1,5 +1,7 @@
 Qake/
 brownie.js/
 voxelengine3/
+test3/
 *.bak
 *.x
+*.old
