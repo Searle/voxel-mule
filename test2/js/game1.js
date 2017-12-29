@@ -42,7 +42,7 @@ class Game {
     }
 
     _buildFloor() {
-        let geometry= new THREE.PlaneGeometry(500, 500);
+        let geometry= new THREE.PlaneGeometry(5000, 5000);
         let material= new this.MeshMaterial({ color: 0xffdd00 });
 
         let mesh= new THREE.Mesh(geometry, material);
@@ -53,7 +53,7 @@ class Game {
     }
 
     _addLight1( scene ) {
-        const light = new THREE.PointLight( 0xffffff, 1, 100 );
+        const light = new THREE.PointLight( 0xffffff, 2, 100 );
         light.position.set( 0, 40, 20 );
         scene.add(light);
 
@@ -167,7 +167,7 @@ class Game {
             const mesh= muleMesh[n][1];
             mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
 
-            camX= (mesh.position.x + camX) / 2;
+            camX= mesh.position.x *.3 + camX * .7;
 
 //            camera.position.x= camX;
 

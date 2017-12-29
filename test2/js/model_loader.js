@@ -68,7 +68,7 @@ class ModelLoader {
         // Remove mesh from scene (cloned later)
         chunk.build();
         chunk.mesh.visible = false;
-        chunk.mesh.position.y= model.sz / 2;
+        chunk.mesh.position.y= (model.sz - 1) / 2;
 
         if ( this.withShadows ) chunk.mesh.castShadow = true;
 
@@ -95,7 +95,7 @@ class ModelLoader {
                 chunk.mesh.visible = false;
                 chunk.mesh.position.y= height / 2;
 
-                // if ( this.withShadows ) chunk.mesh.castShadow = true;
+                if ( this.withShadows ) chunk.mesh.castShadow = true;
 
                 resolve(chunk);
             })
