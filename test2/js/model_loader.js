@@ -8,6 +8,35 @@ let all2= promises => {
     return Promise.resolve();
 };
 
+// let promisize= fn => new Promise((resolve, reject) => fn((err, result) => err ? reject(err) : resolve(result));
+
+function loadImageFile2( file, callback ) {
+    var image = new Image();
+    image.src = file;
+    var ctx = document.createElement('canvas').getContext('2d');
+    image.onload = function() {
+        ctx.canvas.width  = image.width;
+        ctx.canvas.height = image.height;
+        ctx.drawImage(image, 0, 0);
+        var imgData = ctx.getImageData(0, 0, image.width, image.height);
+        var list = [];
+        for(var y = 0; y < image.height; y++) {
+            var pos = y * image.width * 4;
+            for(var x = 0; x < image.width; x++) {
+                var r = imgData.data[pos++];
+                var g = imgData.data[pos++];
+                var b = imgData.data[pos++];
+                var a = imgData.data[pos++];
+                // if (a != 0 && !(r == 0 && g == 0 && b == 0) ) {
+                if (a != 0 ) {
+                    if ( r == 0 && g == 0 && b == 0 ) r= 1;
+                    list.push({x: x, y: y, z: 0, r: r, g: g, b: b, a: a});
+                }
+            }
+        }
+        callback(list, image.width, image.height);
+    }
+}
 
 class ModelLoader {
 
@@ -18,7 +47,7 @@ class ModelLoader {
         this.models= {};
     }
 
-    _loadModel( def, raw ) {
+    _loadVox( def, raw ) {
         const vox= new Vox();
         const model= vox.LoadModel(raw, def.name);
 
@@ -39,31 +68,62 @@ class ModelLoader {
         // Remove mesh from scene (cloned later)
         chunk.build();
         chunk.mesh.visible = false;
+        chunk.mesh.position.y= model.sz / 2;
 
         if ( this.withShadows ) chunk.mesh.castShadow = true;
 
-        return chunk;
+        return Promise.resolve(chunk);
     }
 
-    _addModel( def, data ) {
+    _loadImage( def, raw ) {
+        return new Promise((resolve, reject) =>
+            loadImageFile2(raw, (data, width, height) => {
+                var depth= def.blockSize;
+                var chunk = new Chunk(0, 0, 0, width, height, depth, def.name, 1, def.type);
+                chunk.init();
+                for( var i = 0; i < data.length; i++ ) {
+                    for( var y = 0; y < depth; y++ ) {
+                        chunk.addBlock(data[i].x, data[i].y, y, data[i].r, data[i].g, data[i].b);
+                    }
+                }
+                chunk.blockSize = 1;
+                chunk.build();
+                //chunk.batch_points = data2;
+                //chunk.bp = data2.length;
+                //chunk.addBatch();
+                // Remove mesh from scene (cloned later)
+                chunk.mesh.visible = false;
+                chunk.mesh.position.y= height / 2;
+
+                // if ( this.withShadows ) chunk.mesh.castShadow = true;
+
+                resolve(chunk);
+            })
+        );
+    }
+
+    _addModel( def, response ) {
         this.defs[def.name]= def;
         if ( /\.vox$/.test(def.file) ) {
-            this.models[def.name]= this._loadModel(def, data);
+            return response.arrayBuffer().then(ab => this._loadVox(def, ab)).then(chunk => this.models[def.name]= chunk);
         }
-        console.log("FETCH", def);
+        if ( /\.png$/.test(def.file) ) {
+            return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob))).then(chunk => this.models[def.name]= chunk);
+        }
+        return Promise.reject('_addModel: ' + def.file);
     }
 
     loadModels( defs ) {
         return all2(Object.keys(defs).map(name => {
             const def= defs[name];
-            return fetch(def[0]).then(response => {
-                response.arrayBuffer().then(ab => this._addModel({
-                        name: name,
-                        file: def[0],
-                        blockSize: def[1],
-                        type: def[2],
-                    }, ab));
-            });
+            return fetch(def[0]).then(response =>
+                this._addModel({
+                    name: name,
+                    file: def[0],
+                    blockSize: def[1],
+                    type: def[2],
+                }, response))
+            ;
         }));
     }
 

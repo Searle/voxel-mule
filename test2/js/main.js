@@ -63,6 +63,7 @@ new Game(GameProxy)
             mule4: [ "models/mule4.vox", 1, "object" ],
             mule5: [ "models/mule5.vox", 1, "object" ],
             mule6: [ "models/mule6.vox", 1, "object" ],
+            mule_title: [ "models/mule-title.png", 1, "object" ],
         }
     })
     .then(game => game.run())

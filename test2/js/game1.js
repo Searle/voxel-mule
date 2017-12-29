@@ -141,6 +141,11 @@ class Game {
             muleMesh[i][1]= this.modelLoader.getModel('mule' + (i + 1)).mesh;
         }
 
+        const titleMesh= this.modelLoader.getModel('mule_title').mesh;
+        titleMesh.visible= true;
+        titleMesh.rotation.x= Math.PI;
+        titleMesh.position.z= -40;
+
         // camera.lookAt( scene.position );
 
         let muleRange= 200;
@@ -161,7 +166,6 @@ class Game {
 
             const mesh= muleMesh[n][1];
             mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
-            mesh.position.y= 10.5;
 
             camX= (mesh.position.x + camX) / 2;
 
