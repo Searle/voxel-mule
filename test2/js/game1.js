@@ -1,42 +1,69 @@
 
 class TitleModel {
 
+    _newChunk( width, height ) {
+    }
+
     constructor( modelLoader, depth ) {
-        this.depth= depth;
         this.model= modelLoader.getModel('mule_title');
         this.chunk= this.model.chunk;
         this.mesh= this.chunk.mesh;
-
-        this.mesh.position.x= this.model.inWidth / -2;
-        this.mesh.position.y= this.model.inHeight;
-
-        this.byColor= [ [], [] ];
-        const data= this.model.inList;
+        this.depth= depth;
+        this.black= [];
+        this.colored= [];
+        this.visible= [];
+        const data= this.model.data;
         for ( let i= 0; i < data.length; i++ ) {
             const { x, y, r, g, b }= data[i];
-            const index= r == 1 && g == 0 && b == 0 ? 0 : 1;
-            this.byColor[index].splice(Math.floor(Math.random() * this.byColor[index].length), 0, data[i]);
+            const target= r == 1 && g == 0 && b == 0 ? this.black : this.colored;
+            target.splice(Math.floor(Math.random() * target.length), 0, data[i]);
         }
-        this.model.inList= null;
+        this.model.data= null;
+
+        // Die zwei Hilfs-Voxel verwerfen
+        this.chunk.init();
+
+        const colors= [
+            0x000001, 0xFFFFFF, 0xB04735, 0x74D1DC, 0xAA47D8, 0x6AC424, 0x4F38D7, 0xDAE853, 0xB26E00, 0x7C5D00, 0xDA7F72, 0x696969, 0x929292, 0xDAE853, 0x8C7AFF, 0xB9B9B9, 
+        ]
+
+        this.colors= [];
+        for ( let i= 0; i < colors.length; i++ ) {
+            this.colors.push([ colors[i] >> 16, (colors[i] >> 8) & 0xff, colors[i] & 0xff ]);
+        }
+
+        this.cursor= 0;
     }
 
-    update() {
-        if ( this.byColor ) {
-            let c= this.byColor[0];
-            if ( c.length == 0 ) c= this.byColor[1];
-            if ( c.length ) {
-                var d= c.pop();
-                for( let z = 0; z < this.model.depth; z++ ) {
-                    this.chunk.addBlock(d.x, d.y, z, d.r, d.g, d.b);
+    update( t ) {
+        if ( this.black ) {
+            let wantCursor= t * .05 - 200;
+            while ( wantCursor > this.cursor ) {
+                if ( this.black.length ) {
+                    const d= this.black.pop();
+                    for( let z = 0; z < this.model.depth; z++ ) {
+                        this.chunk.addBlock(d.x, d.y, z, d.r, d.g, d.b);
+                    }
+                    this.chunk.build();
                 }
-
-                this.chunk.build();
-
-                if ( this.byColor[1].length == 0 ) {
-                    this.byColor= null;
+                else if ( this.colored.length ) {
+                    this.visible.push(this.colored.pop());
                 }
+                else {
+                    this.black= undefined;
+                    this.colored= undefined;
+                    break;
+                }
+                this.cursor++;
             }
         }
+        let cycleCursor= t * .01;
+        for ( let i= 0; i < this.visible.length; i++ ) {
+            const d= this.visible[i];
+            const color= this.colors[((d.y < 12 ? 23 - d.y : d.y) + cycleCursor) & 15];
+            this.chunk.addBlock(d.x, d.y, 0, color[0], color[1], color[2]);
+        }
+        this.chunk.build();
     }
 }
 
@@ -82,14 +109,15 @@ class Game {
         return this.modelLoader.loadModels(args.models).then(() => Promise.resolve(this));
     }
 
-    _buildFloor() {
+    _addFloor( scene ) {
         let geometry= new THREE.PlaneGeometry(5000, 5000);
         let material= new this.MeshMaterial({ color: 0xffdd00 });
-
         let mesh= new THREE.Mesh(geometry, material);
         mesh.rotation.x= -Math.PI / 2;
 
         if ( this.withShadows ) mesh.receiveShadow= true;
+
+        this.scene.add(mesh);
         return mesh;
     }
 
@@ -141,8 +169,7 @@ class Game {
         this._addLight1(this.scene);
         // this._addLight2(this.scene);
 
-        this.floorMesh= this._buildFloor();
-        this.scene.add(this.floorMesh);
+        this.floorMesh= this._addFloor(this.scene);
 
         // const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
         // this.scene.add(light);
@@ -176,7 +203,7 @@ class Game {
 
         const titleMesh= titleModel.mesh;
         titleMesh.visible= true;
-        titleMesh.rotation.x= Math.PI;
+//        titleMesh.rotation.x= Math.PI;
         titleMesh.position.z= -40;
 
         // camera.lookAt( scene.position );
@@ -184,12 +211,15 @@ class Game {
         let muleRange= 200;
         let camX= 0;
 
+        let tStart= Date.now();
+
         const animate= function() {
             requestAnimationFrame(animate);
 
-            titleModel.update();
+            let t= Date.now() - tStart;
 
-            let t= Date.now();
+            titleModel.update(t);
+
 
             let muleX= (t / 150) % muleRange;
             const muleX8= muleX % 8;

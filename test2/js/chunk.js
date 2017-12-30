@@ -34,7 +34,7 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
     this.blood_positions = [];
     this.health = 100;
     this.dirty = true;
-    this.positions = 0;
+    // this.positions = 0;
     this.colors = 0;
     this.geometry = 0;
     this.v = 0;
@@ -627,7 +627,7 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
         var wx = x;
         var wy = y;
         var wz = z;
-        
+
         if(!local) {
             x = x - (this.from_x * this.blockSize + this.blockSize) | 0;
             y = y - (this.from_y * this.blockSize + this.blockSize) | 0;
@@ -832,7 +832,7 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
         x = x > 0? x: 0;
         y = y > 0? y: 0;
         z = z > 0? z: 0;
-        
+
         var offset = 5;
         if(this.type == "enemy") {
             offset = 20;
@@ -946,7 +946,6 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
                 ((this.owner.base_type == "object" || this.owner.base_type == "ff_object") && ff.length > 0))
             {
 
-                
                 for (var x = 0; x < this.chunk_size_x; x++) {
                     for (var y = 0; y < this.chunk_size_y; y++) {
                         for (var z = 0; z < this.chunk_size_z; z++) {
@@ -1026,7 +1025,7 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
             stack.push(new THREE.Vector3(b.x - 1, b.y, b.z));
             stack.push(new THREE.Vector3(b.x, b.y - 1, b.z));
         }
-        
+
         if(result.length < 5) {
             return; 
         }
@@ -1134,7 +1133,6 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
         return false;
     };
 
-
     Chunk.prototype.checkExists = function (x, y, z) {
         x -= this.from_x * this.blockSize + this.blockSize;
         y -= this.from_y * this.blockSize + this.blockSize;
@@ -1162,6 +1160,4 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
         }
         return false;
     };
-
-
 };

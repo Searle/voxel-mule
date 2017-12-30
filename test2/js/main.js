@@ -63,7 +63,7 @@ new Game(GameProxy)
             mule4: { file: "models/mule4.vox" },
             mule5: { file: "models/mule5.vox" },
             mule6: { file: "models/mule6.vox" },
-            mule_title: { file: "models/mule-title.png", lazy: true },
+            mule_title: { file: "models/mule-title.png", raw: true },
         }
     })
     .then(game => game.run())

@@ -30,7 +30,7 @@ function loadImageFile2( file, callback ) {
                 // if (a != 0 && !(r == 0 && g == 0 && b == 0) ) {
                 if ( a != 0 ) {
                     if ( r == 0 && g == 0 && b == 0 ) r= 1;
-                    list.push({ x: x, y: y, z: 0, r: r, g: g, b: b, a: a });
+                    list.push({ x: x, y: image.height - y - 1, z: 0, r: r, g: g, b: b, a: a });
                 }
             }
         }
@@ -93,10 +93,14 @@ class ModelLoader {
             loadImageFile2(raw, (data, width, height) => {
                 var chunk = new Chunk(0, 0, 0, width, height, def.depth, def.name, 1, def.type);
                 chunk.init();
-                if ( def.lazy ) {
-                    def.inList= data;
-                    def.inWidth= width;
-                    def.inHeight= height;
+
+                if ( def.raw ) {
+                    def.data= data;
+                    def.width= width;
+                    def.height= height;
+
+                    chunk.addBlock(0, 0, 0, 0, 0, 1);
+                    chunk.addBlock(width - 1, height - 1, def.depth - 1, 0, 0, 1);
                 }
                 else {
                     for( var i = 0; i < data.length; i++ ) {
@@ -105,6 +109,7 @@ class ModelLoader {
                         }
                     }
                 }
+
                 chunk.blockSize = 1;
                 chunk.build();
                 //chunk.batch_points = data2;
@@ -127,9 +132,9 @@ class ModelLoader {
         if ( /\.vox$/.test(def.file) ) {
             return response.arrayBuffer().then(ab => this._loadVox(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
         }
-        if ( 0 && /\.vox$/.test(def.file) ) {
-            return response.arrayBuffer().then(ab => this._loadVox2(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
-        }
+        // if ( /\.vox$/.test(def.file) ) {
+        //     return response.arrayBuffer().then(ab => this._loadVox2(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
+        // }
         if ( /\.png$/.test(def.file) ) {
             return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob))).then(chunk => this.models[def.name].chunk= chunk);
         }
@@ -146,7 +151,7 @@ class ModelLoader {
                     blockSize: def.blockSize || 1,
                     type: def.type || 'object',
                     depth: def.depth || 1,
-                    lazy: def.lazy || false,
+                    raw: def.raw || false,
                 }, response))
             ;
         }));
