@@ -75,6 +75,21 @@ class ModelLoader {
         return Promise.resolve(chunk);
     }
 
+    _loadVox2( def, raw ) {
+        return new Promise((resolve, reject) => {
+            var uint8Array = new Uint8Array(raw); // .byteLength);
+            (new vox.Parser()).parseUint8Array(uint8Array, (err, voxelData) => {
+                var param = { voxelSize: 5 };
+                var builder = new vox.MeshBuilder(voxelData, param);
+                var mesh = builder.createMesh();
+                var chunk= {
+                    mesh: mesh,
+                };
+                resolve(chunk);
+            })
+        });
+    }
+
     _loadImage( def, raw ) {
         return new Promise((resolve, reject) =>
             loadImageFile2(raw, (data, width, height) => {
@@ -107,6 +122,9 @@ class ModelLoader {
         if ( /\.vox$/.test(def.file) ) {
             return response.arrayBuffer().then(ab => this._loadVox(def, ab)).then(chunk => this.models[def.name]= chunk);
         }
+        if ( 0 && /\.vox$/.test(def.file) ) {
+            return response.arrayBuffer().then(ab => this._loadVox2(def, ab)).then(chunk => this.models[def.name]= chunk);
+        }
         if ( /\.png$/.test(def.file) ) {
             return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob))).then(chunk => this.models[def.name]= chunk);
         }
@@ -131,6 +149,7 @@ class ModelLoader {
         return this.models[name];
     }
 
+/*
     getMesh( name ) {
 
 // WTF Firefox? Wo sind meine this.models-Eintraege?
@@ -160,4 +179,6 @@ class ModelLoader {
         }
         return group;
     }
+*/
+
 }

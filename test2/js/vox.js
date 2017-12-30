@@ -41,7 +41,7 @@ var Vox = function() {
 
 
     Vox.prototype.readInt = function(buffer, from) {
-        return buffer[from]| (buffer[from+1] << 8) |  (buffer[from+2] << 16) | (buffer[from+3] << 24);
+        return buffer[from] | (buffer[from+1] << 8) |  (buffer[from+2] << 16) | (buffer[from+3] << 24);
     };
 
     Vox.prototype.LoadModel = function(data, name) {

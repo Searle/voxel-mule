@@ -568,7 +568,7 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
         if(this.mesh != undefined && this.prev_len >= vertices.length) {
             for (var i = 0; i < vertices.length; i++) {
                 this.v.setXYZ(i, vertices[i][0], vertices[i][1], vertices[i][2]);
-                this.c.setXYZW(i, colors[i][0], colors[i][1], colors[i][2], 1);
+                this.c.setXYZ(i, colors[i][0], colors[i][1], colors[i][2]);
             }
 
             this.geometry.setDrawRange(0, vertices.length); 
@@ -579,11 +579,11 @@ function Chunk(x, y, z, cx, cy, cz, id, bs, type) {
                 this.geometry.translate(this.offset.x, this.offset.y, this.offset.z);
             }
         } else {
-            this.v = new THREE.BufferAttribute(new Float32Array(vertices.length * 3), 3);
-            this.c = new THREE.BufferAttribute(new Float32Array(colors.length * 3), 3);
+            this.v = new THREE.Float32BufferAttribute(vertices.length * 3, 3);
+            this.c = new THREE.Float32BufferAttribute(colors.length * 3, 3);
             for (var i = 0; i < vertices.length; i++) {
                 this.v.setXYZ(i, vertices[i][0], vertices[i][1], vertices[i][2]);
-                this.c.setXYZW(i, colors[i][0], colors[i][1], colors[i][2], 1);
+                this.c.setXYZ(i, colors[i][0], colors[i][1], colors[i][2]);
             }
             this.geometry = new THREE.BufferGeometry();
             this.geometry.dynamic = true;

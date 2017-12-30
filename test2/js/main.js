@@ -50,7 +50,7 @@ new Game(GameProxy)
             stats: true,
         },
 
-        // withShadows: true,
+        withShadows: true,
 
         // meshMaterial: 'Phong',
         // meshMaterial: 'Standard',

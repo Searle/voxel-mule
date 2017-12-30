@@ -167,11 +167,11 @@ class Game {
             const mesh= muleMesh[n][1];
             mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
 
-            camX= mesh.position.x *.3 + camX * .7;
+            camX= (mesh.position.x * .2) *.3 + camX * .7;
 
 //            camera.position.x= camX;
 
-            camera.lookAt({ x: camX, y: mesh.position.y, z: mesh.position.z });
+//            camera.lookAt({ x: camX, y: mesh.position.y, z: mesh.position.z });
 
 //            camera.lookAt( scene.position );
 
