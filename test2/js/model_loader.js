@@ -20,17 +20,17 @@ function loadImageFile2( file, callback ) {
         ctx.drawImage(image, 0, 0);
         var imgData = ctx.getImageData(0, 0, image.width, image.height);
         var list = [];
-        for(var y = 0; y < image.height; y++) {
+        for( var y = 0; y < image.height; y++ ) {
             var pos = y * image.width * 4;
-            for(var x = 0; x < image.width; x++) {
+            for( var x = 0; x < image.width; x++ ) {
                 var r = imgData.data[pos++];
                 var g = imgData.data[pos++];
                 var b = imgData.data[pos++];
                 var a = imgData.data[pos++];
                 // if (a != 0 && !(r == 0 && g == 0 && b == 0) ) {
-                if (a != 0 ) {
+                if ( a != 0 ) {
                     if ( r == 0 && g == 0 && b == 0 ) r= 1;
-                    list.push({x: x, y: y, z: 0, r: r, g: g, b: b, a: a});
+                    list.push({ x: x, y: y, z: 0, r: r, g: g, b: b, a: a });
                 }
             }
         }
@@ -43,7 +43,6 @@ class ModelLoader {
     constructor( withShadows, MeshMaterial ) {
         this.withShadows= withShadows;
         this.MeshMaterial= MeshMaterial;
-        this.defs= {};
         this.models= {};
     }
 
@@ -52,7 +51,6 @@ class ModelLoader {
         const model= vox.LoadModel(raw, def.name);
 
         const chunk= new Chunk(0, 0, 0, model.sx, model.sz, model.sy, def.name, def.blockSize, def.type);
-        // chunk.blockSize= this.models[name][1];
         chunk.init();
         for ( let i = 0; i < model.data.length; i++ ) {
             const p= model.data[i];
@@ -93,12 +91,18 @@ class ModelLoader {
     _loadImage( def, raw ) {
         return new Promise((resolve, reject) =>
             loadImageFile2(raw, (data, width, height) => {
-                var depth= def.blockSize;
-                var chunk = new Chunk(0, 0, 0, width, height, depth, def.name, 1, def.type);
+                var chunk = new Chunk(0, 0, 0, width, height, def.depth, def.name, 1, def.type);
                 chunk.init();
-                for( var i = 0; i < data.length; i++ ) {
-                    for( var y = 0; y < depth; y++ ) {
-                        chunk.addBlock(data[i].x, data[i].y, y, data[i].r, data[i].g, data[i].b);
+                if ( def.lazy ) {
+                    def.inList= data;
+                    def.inWidth= width;
+                    def.inHeight= height;
+                }
+                else {
+                    for( var i = 0; i < data.length; i++ ) {
+                        for( var y = 0; y < def.depth; y++ ) {
+                            chunk.addBlock(data[i].x, data[i].y, y, data[i].r, data[i].g, data[i].b);
+                        }
                     }
                 }
                 chunk.blockSize = 1;
@@ -108,6 +112,7 @@ class ModelLoader {
                 //chunk.addBatch();
                 // Remove mesh from scene (cloned later)
                 chunk.mesh.visible = false;
+
                 chunk.mesh.position.y= height / 2;
 
                 if ( this.withShadows ) chunk.mesh.castShadow = true;
@@ -118,15 +123,15 @@ class ModelLoader {
     }
 
     _addModel( def, response ) {
-        this.defs[def.name]= def;
+        this.models[def.name]= def;
         if ( /\.vox$/.test(def.file) ) {
-            return response.arrayBuffer().then(ab => this._loadVox(def, ab)).then(chunk => this.models[def.name]= chunk);
+            return response.arrayBuffer().then(ab => this._loadVox(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
         }
         if ( 0 && /\.vox$/.test(def.file) ) {
-            return response.arrayBuffer().then(ab => this._loadVox2(def, ab)).then(chunk => this.models[def.name]= chunk);
+            return response.arrayBuffer().then(ab => this._loadVox2(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
         }
         if ( /\.png$/.test(def.file) ) {
-            return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob))).then(chunk => this.models[def.name]= chunk);
+            return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob))).then(chunk => this.models[def.name].chunk= chunk);
         }
         return Promise.reject('_addModel: ' + def.file);
     }
@@ -134,12 +139,14 @@ class ModelLoader {
     loadModels( defs ) {
         return all2(Object.keys(defs).map(name => {
             const def= defs[name];
-            return fetch(def[0]).then(response =>
+            return fetch(def.file).then(response =>
                 this._addModel({
                     name: name,
-                    file: def[0],
-                    blockSize: def[1],
-                    type: def[2],
+                    file: def.file,
+                    blockSize: def.blockSize || 1,
+                    type: def.type || 'object',
+                    depth: def.depth || 1,
+                    lazy: def.lazy || false,
                 }, response))
             ;
         }));
@@ -158,7 +165,7 @@ class ModelLoader {
         // FIXME: Kann static sein
         const geometry = new THREE.BoxGeometry(1, 1, 1);
 
-        const model= this.models[name];
+        const model= this.models[name].chunk;
         const group = new THREE.Group();
         for ( let i= 0; i < model.blocks.length; i++ ) {
             const block= model.blocks[i];

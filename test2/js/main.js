@@ -57,13 +57,13 @@ new Game(GameProxy)
         meshMaterial: 'Toon',
 
         models: {
-            mule1: [ "models/mule1.vox", 1, "object" ],
-            mule2: [ "models/mule2.vox", 1, "object" ],
-            mule3: [ "models/mule3.vox", 1, "object" ],
-            mule4: [ "models/mule4.vox", 1, "object" ],
-            mule5: [ "models/mule5.vox", 1, "object" ],
-            mule6: [ "models/mule6.vox", 1, "object" ],
-            mule_title: [ "models/mule-title.png", 1, "object" ],
+            mule1: { file: "models/mule1.vox" },
+            mule2: { file: "models/mule2.vox" },
+            mule3: { file: "models/mule3.vox" },
+            mule4: { file: "models/mule4.vox" },
+            mule5: { file: "models/mule5.vox" },
+            mule6: { file: "models/mule6.vox" },
+            mule_title: { file: "models/mule-title.png", lazy: true },
         }
     })
     .then(game => game.run())

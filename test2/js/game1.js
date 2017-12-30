@@ -1,4 +1,45 @@
 
+class TitleModel {
+
+    constructor( modelLoader, depth ) {
+        this.depth= depth;
+        this.model= modelLoader.getModel('mule_title');
+        this.chunk= this.model.chunk;
+        this.mesh= this.chunk.mesh;
+
+        this.mesh.position.x= this.model.inWidth / -2;
+        this.mesh.position.y= this.model.inHeight;
+
+        this.byColor= [ [], [] ];
+        const data= this.model.inList;
+        for ( let i= 0; i < data.length; i++ ) {
+            const { x, y, r, g, b }= data[i];
+            const index= r == 1 && g == 0 && b == 0 ? 0 : 1;
+            this.byColor[index].splice(Math.floor(Math.random() * this.byColor[index].length), 0, data[i]);
+        }
+        this.model.inList= null;
+    }
+
+    update() {
+        if ( this.byColor ) {
+            let c= this.byColor[0];
+            if ( c.length == 0 ) c= this.byColor[1];
+            if ( c.length ) {
+                var d= c.pop();
+                for( let z = 0; z < this.model.depth; z++ ) {
+                    this.chunk.addBlock(d.x, d.y, z, d.r, d.g, d.b);
+                }
+
+                this.chunk.build();
+
+                if ( this.byColor[1].length == 0 ) {
+                    this.byColor= null;
+                }
+            }
+        }
+    }
+}
+
 class Game {
 
     init( args ) {
@@ -106,16 +147,6 @@ class Game {
         // const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
         // this.scene.add(light);
 
-/*
-        this.muleMesh= [
-            [ 0 ], [ 2 ], [ 2 ], [ 4 ], [ 6 ], [ 6 ]
-        ];
-        for ( let i= 0; i < 6; i++ ) {
-            this.muleMesh[i][1]= this.modelLoader.getMesh('mule' + (i + 1));
-            scene.add(this.muleMesh[i][1]);
-        }
-
-*/
         return this.scene;
     }
 
@@ -138,10 +169,12 @@ class Game {
             [ 0 ], [ 2 ], [ 2 ], [ 4 ], [ 6 ], [ 6 ]
         ];
         for ( let i= 0; i < 6; i++ ) {
-            muleMesh[i][1]= this.modelLoader.getModel('mule' + (i + 1)).mesh;
+            muleMesh[i][1]= this.modelLoader.getModel('mule' + (i + 1)).chunk.mesh;
         }
 
-        const titleMesh= this.modelLoader.getModel('mule_title').mesh;
+        const titleModel= new TitleModel(this.modelLoader);
+
+        const titleMesh= titleModel.mesh;
         titleMesh.visible= true;
         titleMesh.rotation.x= Math.PI;
         titleMesh.position.z= -40;
@@ -153,6 +186,8 @@ class Game {
 
         const animate= function() {
             requestAnimationFrame(animate);
+
+            titleModel.update();
 
             let t= Date.now();
 
@@ -171,7 +206,9 @@ class Game {
 
 //            camera.position.x= camX;
 
-//            camera.lookAt({ x: camX, y: mesh.position.y, z: mesh.position.z });
+
+            // FIXME: Geht nicht mehr?
+            // camera.lookAt({ x: camX, y: mesh.position.y, z: mesh.position.z });
 
 //            camera.lookAt( scene.position );
 
