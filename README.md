@@ -7,4 +7,4 @@ Contains code from:
 
 Browsers:
 - Use the new Firefox, I get 60 fps on my rather old machine
-- WebGL is slooow on Chrome, making 6-10 fps. But *much* faster debugger
+- WebGL is slooow on Chrome, making 6-10 fps. But the debugger is *much* faster.

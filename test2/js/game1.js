@@ -1,9 +1,6 @@
 
 class TitleModel {
 
-    _newChunk( width, height ) {
-    }
-
     constructor( modelLoader, depth ) {
         this.model= modelLoader.getModel('mule_title');
         this.chunk= this.model.chunk;
@@ -24,7 +21,10 @@ class TitleModel {
         this.chunk.init();
 
         const colors= [
-            0x000001, 0xFFFFFF, 0xB04735, 0x74D1DC, 0xAA47D8, 0x6AC424, 0x4F38D7, 0xDAE853, 0xB26E00, 0x7C5D00, 0xDA7F72, 0x696969, 0x929292, 0xDAE853, 0x8C7AFF, 0xB9B9B9, 
+            0x000001, 0xFFFFFF, 0xB04735, 0x74D1DC, 0xAA47D8, 0x6AC424, 0x4F38D7, 0xDAE853, 0xB26E00, 0x7C5D00, 0xDA7F72, 0x696969, 0x929292, 0xDAE853, 0x8C7AFF, 0xB9B9B9,
+
+            // VIC II, http://www.pepto.de/projects/colorvic/
+            // 0x000001, 0xFFFFFF, 0x813338, 0x75cec8, 0x8e3c97, 0x56ac4d, 0x2e2c9b, 0xedf171, 0x8e5029, 0x553800, 0xc46c71, 0x4a4a4a, 0x7b7b7b, 0xa9ff9f, 0x706deb, 0xb2b2b2,
         ]
 
         this.colors= [];
@@ -180,7 +180,7 @@ class Game {
     _buildCamera() {
         const camera = new THREE.PerspectiveCamera(75, this.mainWidth / this.mainHeight, 1, 1000);
         camera.position.z = 50;
-        camera.position.y = 10;
+        camera.position.y = 6;
         return camera;
     }
 
@@ -209,9 +209,12 @@ class Game {
         // camera.lookAt( scene.position );
 
         let muleRange= 200;
-        let camX= 0;
+        let lookAtX= 0;
+        let lookAtY= 0;
 
         let tStart= Date.now();
+
+        let lookAt= new THREE.Vector3();
 
         const animate= function() {
             requestAnimationFrame(animate);
@@ -232,15 +235,27 @@ class Game {
             const mesh= muleMesh[n][1];
             mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
 
-            camX= (mesh.position.x * .2) *.3 + camX * .7;
 
-//            camera.position.x= camX;
+            let lookAtX_= mesh.position.x;
+            let lookAtY_= 6;
+            const muleInRange= lookAtX_ >= -50 && lookAtX_ <= 50;
 
+            if ( muleInRange ) {
+                lookAtX *= 1;
+            }
+            else {
+                lookAtX_= titleMesh.position.x;
+                lookAtY_= titleMesh.position.y;
+            }
 
-            // FIXME: Geht nicht mehr?
-            // camera.lookAt({ x: camX, y: mesh.position.y, z: mesh.position.z });
+            lookAtX= lookAtX_ * .02 + lookAtX * .98;
+            lookAtY= lookAtY_ * .02 + lookAtY * .98;
 
-//            camera.lookAt( scene.position );
+            if ( !lookAt ) lookAt= mesh.position.clone();
+            lookAt.x= lookAtX;
+            lookAt.y= lookAtY;
+
+            camera.lookAt(lookAt);
 
             this.renderer.render(scene, camera);
 
