@@ -106,6 +106,9 @@ class Game {
         const ambientLight = new THREE.AmbientLight(0xffffff, .5);
         this.scene.add( ambientLight );
 
+        this.sunX= 320;
+        this.sunY= -500;
+
         return this.modelLoader.loadModels(args.models).then(() => Promise.resolve(this));
     }
 
@@ -119,6 +122,15 @@ class Game {
 
         this.scene.add(mesh);
         return mesh;
+    }
+
+    _addSun( scene ) {
+        var geometry = new THREE.CircleBufferGeometry( 40, 16 );
+        var material = new THREE.MeshBasicMaterial({ color: 0xffffcc });
+        var circle = new THREE.Mesh( geometry, material );
+        circle.position.y= this.sunX;
+        circle.position.z= this.sunY;
+        scene.add( circle );
     }
 
     _addLight1( scene ) {
@@ -135,20 +147,20 @@ class Game {
         }
     }
 
-    _addLight2( scene ) {
-        const light = new THREE.DirectionalLight(0xffffff, 1.75);
-        light.position.set(0, 80, 150);
+    _addDirectionalLight( scene, intensity, y, z, withShadows ) {
+        const light = new THREE.DirectionalLight(0xffffff, intensity);
+        light.position.set(0, y, z);
         scene.add(light);
 
         if ( this.debug.lights ) {
             scene.add(new THREE.DirectionalLightHelper(light, 5));
         }
 
-        if ( this.withShadows ) {
+        if ( withShadows ) {
             light.castShadow = true;
-            light.shadow.mapSize.width = 512;
-            light.shadow.mapSize.height = 512;
-            const d = 200;
+            light.shadow.mapSize.width = 1024;
+            light.shadow.mapSize.height = 1024;
+            const d = 100;
             light.shadow.camera.left = -d;
             light.shadow.camera.right = d;
             light.shadow.camera.top = d;
@@ -161,15 +173,21 @@ class Game {
         }
     }
 
+    _addLight2( scene ) {
+        this._addDirectionalLight(scene, .45, 80, 200, false);
+        this._addDirectionalLight(scene, 1, this.sunX, this.sunY, this.withShadows);
+    }
+
     _initScene() {
 
         // var axisHelper = new THREE.AxisHelper( 5 );
         // scene.add( axisHelper );
 
-        this._addLight1(this.scene);
-        // this._addLight2(this.scene);
+        // this._addLight1(this.scene);
+        this._addLight2(this.scene);
 
-        this.floorMesh= this._addFloor(this.scene);
+        this._addFloor(this.scene);
+        this._addSun(this.scene);
 
         // const light = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
         // this.scene.add(light);
@@ -203,12 +221,9 @@ class Game {
 
         const titleMesh= titleModel.mesh;
         titleMesh.visible= true;
-//        titleMesh.rotation.x= Math.PI;
         titleMesh.position.z= -40;
 
-        // camera.lookAt( scene.position );
-
-        let muleRange= 200;
+        let muleRange= 240;
         let lookAtX= 0;
         let lookAtY= 0;
 
@@ -234,22 +249,23 @@ class Game {
 
             const mesh= muleMesh[n][1];
             mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
-
+            mesh.position.z= 5;
 
             let lookAtX_= mesh.position.x;
             let lookAtY_= 6;
-            const muleInRange= lookAtX_ >= -50 && lookAtX_ <= 50;
+            const muleInRange= lookAtX_ >= -80 && lookAtX_ <= 80;
 
             if ( muleInRange ) {
-                lookAtX *= 1;
+                lookAtX *= .9;
             }
             else {
                 lookAtX_= titleMesh.position.x;
                 lookAtY_= titleMesh.position.y;
             }
 
-            lookAtX= lookAtX_ * .02 + lookAtX * .98;
-            lookAtY= lookAtY_ * .02 + lookAtY * .98;
+            const percent= .985;
+            lookAtX= lookAtX_ * (1 - percent) + lookAtX * percent;
+            lookAtY= lookAtY_ * (1 - percent) + lookAtY * percent;
 
             if ( !lookAt ) lookAt= mesh.position.clone();
             lookAt.x= lookAtX;
