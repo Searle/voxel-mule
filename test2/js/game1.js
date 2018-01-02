@@ -70,7 +70,6 @@ class TitleModel {
 class Game {
 
     init( args ) {
-
         let container= document.body;
 
         if ( args.onCreate ) args.onCreate(this);

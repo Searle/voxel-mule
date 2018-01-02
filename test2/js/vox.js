@@ -1,25 +1,9 @@
 //==============================================================================
-// Author: Nergal
-// http://webgl.nu
-// Date: 2014-11-17
+// Based on: Nergal, http://webgl.nu, 2014-11-17
 //==============================================================================
-function VoxelData() {
-    this.x;
-    this.y;
-    this.z;
-    this.color;
 
-    VoxelData.prototype.Create = function(buffer, i) {
-        this.x = buffer[i++] & 0xFF;
-        this.y = buffer[i++] & 0xFF;
-        this.z = buffer[i++] & 0xFF;
-        this.color = buffer[i] & 0xFF;
-    };
-}
-VoxelData.prototype = new VoxelData();
-VoxelData.prototype.constructor = VoxelData;
+(function( ns ) {
 
-var Vox = function() {
     var voxColors = [
         0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff, 0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
         0xff6699ff, 0xff3399ff, 0xff0099ff, 0xffff66ff, 0xffcc66ff, 0xff9966ff, 0xff6666ff, 0xff3366ff, 0xff0066ff, 0xffff33ff, 0xffcc33ff, 0xff9933ff, 0xff6633ff, 0xff3333ff, 0xff0033ff, 0xffff00ff,
@@ -39,118 +23,127 @@ var Vox = function() {
         0xff880000, 0xff770000, 0xff550000, 0xff440000, 0xff220000, 0xff110000, 0xffeeeeee, 0xffdddddd, 0xffbbbbbb, 0xffaaaaaa, 0xff888888, 0xff777777, 0xff555555, 0xff444444, 0xff222222, 0xff111111
     ];
 
+    ns.LoadVox = function( data, name ) {
 
-    Vox.prototype.readInt = function(buffer, from) {
-        return buffer[from] | (buffer[from+1] << 8) |  (buffer[from+2] << 16) | (buffer[from+3] << 24);
-    };
+        var fail= function( err ) {
+            return { name: name, models: [], err: err };
+        };
 
-    Vox.prototype.LoadModel = function(data, name) {
-        var colors = [];
-        var colors2 = undefined;
-        var voxelData = [];
+        if ( !data ) return fail('data empty');
 
-        var map = new Array();
-        var sizex = 0, sizey = 0, sizez = 0;
+        var colors;
+        var sizeX = 0;
+        var sizeY = 0;
+        var sizeZ = 0;
+        var models= [];
+        var model_i= 0;
+        var numModels= 1;
 
-        if (data) {
-            var buffer = new Uint8Array(data);
+        var buffer = new Uint8Array(data);
+        var i = 0;
 
-            var i = 0;
-            var type = String.fromCharCode(parseInt(buffer[i++]))+
-                String.fromCharCode(parseInt(buffer[i++]))+
-                String.fromCharCode(parseInt(buffer[i++]))+
-                String.fromCharCode(parseInt(buffer[i++]));
-            var version = this.readInt(buffer, i);
-            i += 4;
+        var readTag = function() {
+            return String.fromCharCode(parseInt(buffer[i++]))
+                + String.fromCharCode(parseInt(buffer[i++]))
+                + String.fromCharCode(parseInt(buffer[i++]))
+                + String.fromCharCode(parseInt(buffer[i++]))
+            ;
+        };
 
-            while(i < buffer.length) {
-                var id = String.fromCharCode(parseInt(buffer[i++]))+
-                    String.fromCharCode(parseInt(buffer[i++]))+
-                    String.fromCharCode(parseInt(buffer[i++]))+
-                    String.fromCharCode(parseInt(buffer[i++]));
+        var readInt = function() {
+            return buffer[i++] | (buffer[i++] << 8) |  (buffer[i++] << 16) | (buffer[i++] << 24);
+        };
 
-                var chunkSize = this.readInt(buffer, i) & 0xFF;
-                i += 4;
-                var childChunks = this.readInt(buffer, i) & 0xFF;
-                i += 4;
+        var tagReader= {
 
-                if(id == "SIZE") {
-                    sizex = this.readInt(buffer, i) & 0xFF;
-                    i += 4;
-                    sizey = this.readInt(buffer, i) & 0xFF;
-                    i += 4;
-                    sizez = this.readInt(buffer, i) & 0xFF;
-                    i += 4;
+            PACK: function() {
+                numModels = readInt();
+            }.bind(this),
 
-                    for(var x = 0; x < sizex; x++) {
-                        map[x] = new Array();
-                        for(var y = 0; y < sizey; y++) {
-                            map[x][y] = new Array();
-                        }
-                    }
-                   // i += chunkSize - 4 * 3;
-                } else if (id == "XYZI") {
-                    var numVoxels = this.readInt(buffer, i);
-                    i += 4;
-                    voxelData = new Array(numVoxels);
-                    for (var n = 0; n < voxelData.length; n++) {
-                        voxelData[n] = new VoxelData();
-                        voxelData[n].Create(buffer, i); // Read 4 bytes
-                        i += 4;
-                       // if(voxelData[n].x > sizex || voxelData[n].y > sizey || voxelData[n].z > sizez) {
-                       //     console.log("VOXELS:",numVoxels, "N:",n);
-                       //     voxelData.length = n;
-                       //     break;
-                       // }
-                        //   // Workaround for some issues I can't figure out!?
-                        //   // numVoxels are not correct in some particular case and I can't see anything wrong
-                        //   // towards the .vox specification.
-                        //    var id = String.fromCharCode(parseInt(buffer[i++]))+
-                        //        String.fromCharCode(parseInt(buffer[i++]))+
-                        //        String.fromCharCode(parseInt(buffer[i++]))+
-                        //        String.fromCharCode(parseInt(buffer[i++]));
-                        //    if(id == "RGBA") {
-                        //        i -= 4;
-                        //        continue;
-                        //    }
-                        //}
-                    }
-                } else if (id == "MAIN") {
-                } else if (id == "PACK") {
-                    var numModels = this.readInt(buffer, i);
-                    i += 4;
-                } else if (id == "MATT") {
-                } else if (id == "RGBA") {
-                    colors2 = new Array(255);
-                    for (var n = 0; n <= 254; n++ ) {
-                        var r = buffer[i++] & 0xFF;
-                        var g = buffer[i++] & 0xFF;
-                        var b = buffer[i++] & 0xFF;
-                        var a = buffer[i++] & 0xFF;
-                        colors2[n+1] = {'r': r, 'g': g, 'b': b, 'a': a};
-                    }
-                } else {
-                    i += chunkSize;
+            SIZE: function() {
+                sizeX = readInt();
+                sizeY = readInt();
+                sizeZ = readInt();
+            }.bind(this),
+
+            XYZI: function() {
+                var numVoxels = readInt();
+                voxels = new Array(numVoxels);
+                for ( var n = 0; n < voxels.length; n++ ) {
+                    voxels[n] = {
+                        x: buffer[i++],
+                        y: buffer[i++],
+                        z: buffer[i++],
+                        color: buffer[i++],
+                    };
                 }
-            }
-
-            if (voxelData == null || voxelData.length == 0) {
-                return null;
-            }
-            for (var n = 0; n < voxelData.length; n++) {
-                if(colors2 == undefined) {
-                    var c = voxColors[voxelData[n].color-1];
-                    var r = (c & 0xff0000) >> 16;
-                    var g = (c & 0x00ff00) >> 8;
-                    var b = (c & 0x0000ff);
-                    voxelData[n].val = (r & 0xFF) << 24 | (g & 0xFF) << 16 | (b & 0xFF) << 8;
-                } else {
-                    var color = colors2[voxelData[n].color];
-                    voxelData[n].val = (color.r & 0xFF) << 24 | (color.g & 0xFF) << 16 | (color.b & 0xFF) << 8;
+                if ( model_i >= numModels ) {
+                    return 'more than ' + numModel + ' expected models found';
                 }
+                models[model_i++]= {
+                    sx: sizeX,
+                    sy: sizeY,
+                    sz: sizeZ,
+                    voxels: voxels,
+                }
+            }.bind(this),
+
+            RGBA: function() {
+                colors= new Array(256);
+                for ( var n = 0; n < 255; n++ ) {
+                    colors[n + 1]= readInt();
+                }
+                i += 4;  // Spec sagt 256 Eintraege...
+            }.bind(this)
+        };
+
+        var readChildren= function() {
+            var tag = readTag();
+            var contentSize = readInt();
+            var childrenSize = readInt();
+
+// console.log("TAG", tag, contentSize, childrenSize);
+
+            var end= i + contentSize;
+            if ( tag in tagReader ) {
+                var err= tagReader[tag]();
+                if ( err ) return err;
+
+                if ( i != end ) return 'tag ' + tag + ': content expected ' + contentSize + ' bytes, used ' + (contentSize + i - end);
             }
-            return {name: name, data: voxelData, sx: sizex + 1, sy: sizey + 1, sz: sizez + 1};
+            else {
+                // console.warn('Unknown tag', tag, i);
+                i += contentSize;
+            }
+            end= i + childrenSize;
+            while ( i < end ) {
+                var err= readChildren();
+                if ( err ) return err;
+            }
+            if ( i != end ) return 'tag ' + tag + ': children expected ' + childrenSize + ' bytes, used ' + (childrenSize + i - end);
+        }.bind(this);
+
+        var type = readTag();
+        if ( type != 'VOX ' ) return fail('no VOX header');
+
+        i += 4; // Skip version
+
+        var err= readChildren();
+        if ( err ) fail(err);
+
+        if ( models.length != numModels ) {
+            return fail('got ' + models.length + ' models, expected ' + numModels);
         }
-    };
-}
 
+        if ( !colors ) colors= voxColors;
+
+        for ( var m = 0; m < models.length; m++ ) {
+            for ( var n = 0; n < models[m].voxels.length; n++ ) {
+                models[m].voxels[n].color = colors[models[m].voxels[n].color];
+            }
+        }
+// die();
+        return { name: name, models: models };
+    };
+
+})(window);

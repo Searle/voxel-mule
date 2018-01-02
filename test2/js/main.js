@@ -57,6 +57,8 @@ new Game(GameProxy)
         meshMaterial: 'Toon',
 
         models: {
+            char_bonzoid: { file: "models/char-bonzoid.vox" },
+            char_mechtron: { file: "models/char-mechtron.vox" },
             mule1: { file: "models/mule1.vox" },
             mule2: { file: "models/mule2.vox" },
             mule3: { file: "models/mule3.vox" },

@@ -47,16 +47,15 @@ class ModelLoader {
     }
 
     _loadVox( def, raw ) {
-        const vox= new Vox();
-        const model= vox.LoadModel(raw, def.name);
-
+        const vox= LoadVox(raw, def.name);
+        const model= vox.models[0];
         const chunk= new Chunk(0, 0, 0, model.sx, model.sz, model.sy, def.name, def.blockSize, def.type);
         chunk.init();
-        for ( let i = 0; i < model.data.length; i++ ) {
-            const p= model.data[i];
-            const r= (p.val >> 24) & 0xFF;
-            const g= (p.val >> 16) & 0xFF;
-            const b= (p.val >> 8) & 0xFF;
+        for ( let i = 0; i < model.voxels.length; i++ ) {
+            const p= model.voxels[i];
+            const r= (p.color >> 24) & 0xFF;
+            const g= (p.color >> 16) & 0xFF;
+            const b= (p.color >> 8) & 0xFF;
             if ( p.y > model.sy || p.x > model.sx || p.z > model.sz ) {
                 continue;
             }
