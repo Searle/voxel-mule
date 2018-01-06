@@ -4,7 +4,7 @@
 
 (function( ns ) {
 
-    var voxColors = [
+    var defaultVoxColors = [
         0x00000000, 0xffffffff, 0xffccffff, 0xff99ffff, 0xff66ffff, 0xff33ffff, 0xff00ffff, 0xffffccff, 0xffccccff, 0xff99ccff, 0xff66ccff, 0xff33ccff, 0xff00ccff, 0xffff99ff, 0xffcc99ff, 0xff9999ff,
         0xff6699ff, 0xff3399ff, 0xff0099ff, 0xffff66ff, 0xffcc66ff, 0xff9966ff, 0xff6666ff, 0xff3366ff, 0xff0066ff, 0xffff33ff, 0xffcc33ff, 0xff9933ff, 0xff6633ff, 0xff3333ff, 0xff0033ff, 0xffff00ff,
         0xffcc00ff, 0xff9900ff, 0xff6600ff, 0xff3300ff, 0xff0000ff, 0xffffffcc, 0xffccffcc, 0xff99ffcc, 0xff66ffcc, 0xff33ffcc, 0xff00ffcc, 0xffffcccc, 0xffcccccc, 0xff99cccc, 0xff66cccc, 0xff33cccc,
@@ -51,10 +51,14 @@
         };
 
         var readInt = function() {
-            return buffer[i++] | (buffer[i++] << 8) |  (buffer[i++] << 16) | (buffer[i++] << 24);
+            return buffer[i++] | (buffer[i++] << 8) | (buffer[i++] << 16) | (buffer[i++] << 24);
         };
 
         var tagReader= {
+
+            MAIN: function() {
+                // Dummy
+            }.bind(this),
 
             PACK: function() {
                 numModels = readInt();
@@ -101,23 +105,27 @@
             var tag = readTag();
             var contentSize = readInt();
             var childrenSize = readInt();
+            var err;
+            var end;
 
 // console.log("TAG", tag, contentSize, childrenSize);
 
-            var end= i + contentSize;
-            if ( tag in tagReader ) {
-                var err= tagReader[tag]();
-                if ( err ) return err;
+            if ( !(tag in tagReader) ) {
 
-                if ( i != end ) return 'tag ' + tag + ': content expected ' + contentSize + ' bytes, used ' + (contentSize + i - end);
-            }
-            else {
                 // console.warn('Unknown tag', tag, i);
-                i += contentSize;
+                i += contentSize + childrenSize;
+                return;
             }
+
+            end= i + contentSize;
+            err= tagReader[tag]();
+            if ( err ) return err;
+
+            if ( i != end ) return 'tag ' + tag + ': content expected ' + contentSize + ' bytes, used ' + (contentSize + i - end);
+
             end= i + childrenSize;
             while ( i < end ) {
-                var err= readChildren();
+                err= readChildren();
                 if ( err ) return err;
             }
             if ( i != end ) return 'tag ' + tag + ': children expected ' + childrenSize + ' bytes, used ' + (childrenSize + i - end);
@@ -135,14 +143,14 @@
             return fail('got ' + models.length + ' models, expected ' + numModels);
         }
 
-        if ( !colors ) colors= voxColors;
+        if ( !colors ) colors= defaultVoxColors;
 
         for ( var m = 0; m < models.length; m++ ) {
             for ( var n = 0; n < models[m].voxels.length; n++ ) {
-                models[m].voxels[n].color = colors[models[m].voxels[n].color];
+                models[m].voxels[n].color = colors[models[m].voxels[n].color] << 8;
             }
         }
-// die();
+
         return { name: name, models: models };
     };
 
