@@ -46,46 +46,43 @@ class ModelLoader {
         this.models= {};
     }
 
+
+    __addModel( def, index, chunk ) {
+        var name= def.name + '_' + index;
+        this.models[name]= Object.assign({}, def, { name: name, chunk: chunk });
+    }
+
+
     _loadVox( def, raw ) {
-        const vox= LoadVox(raw, def.name);
-        const model= vox.models[0];
-        const chunk= new Chunk(0, 0, 0, model.sx, model.sz, model.sy, def.name, def.blockSize, def.type);
-        chunk.init();
-        for ( let i = 0; i < model.voxels.length; i++ ) {
-            const p= model.voxels[i];
-            const r= (p.color >> 24) & 0xFF;
-            const g= (p.color >> 16) & 0xFF;
-            const b= (p.color >> 8) & 0xFF;
-            if ( p.y > model.sy || p.x > model.sx || p.z > model.sz ) {
-                continue;
+        const vox= ParseVox(raw, def.name);
+        for ( var m= 0; m < vox.models.length; m++ ) {
+            const model= vox.models[m];
+            const chunk= new Chunk(0, 0, 0, model.sx, model.sz, model.sy, def.name, def.blockSize, def.type);
+            chunk.init();
+            for ( let i = 0; i < model.voxels.length; i++ ) {
+                const p= model.voxels[i];
+                const r= (p.color >> 24) & 0xFF;
+                const g= (p.color >> 16) & 0xFF;
+                const b= (p.color >> 8) & 0xFF;
+                if ( p.y > model.sy || p.x > model.sx || p.z > model.sz ) {
+                    continue;
+                }
+                chunk.addBlock(p.x, p.z, p.y, r, g, b);
             }
-            chunk.addBlock(p.x, p.z, p.y, r, g, b);
+
+            //chunk.addBatch();
+
+            // Remove mesh from scene (cloned later)
+            chunk.build();
+            chunk.mesh.visible = false;
+            chunk.mesh.position.y= (model.sz - 1) / 2;
+            if ( this.withShadows ) chunk.mesh.castShadow = true;
+
+            this.__addModel(def, m, chunk);
         }
-        //chunk.addBatch();
-        // Remove mesh from scene (cloned later)
-        chunk.build();
-        chunk.mesh.visible = false;
-        chunk.mesh.position.y= (model.sz - 1) / 2;
-
-        if ( this.withShadows ) chunk.mesh.castShadow = true;
-
-        return Promise.resolve(chunk);
+        return Promise.resolve();
     }
 
-    _loadVox2( def, raw ) {
-        return new Promise((resolve, reject) => {
-            var uint8Array = new Uint8Array(raw); // .byteLength);
-            (new vox.Parser()).parseUint8Array(uint8Array, (err, voxelData) => {
-                var param = { voxelSize: 5 };
-                var builder = new vox.MeshBuilder(voxelData, param);
-                var mesh = builder.createMesh();
-                var chunk= {
-                    mesh: mesh,
-                };
-                resolve(chunk);
-            })
-        });
-    }
 
     _loadImage( def, raw ) {
         return new Promise((resolve, reject) =>
@@ -121,22 +118,23 @@ class ModelLoader {
 
                 if ( this.withShadows ) chunk.mesh.castShadow = true;
 
-                resolve(chunk);
+                this.__addModel(def, 0, chunk);
+                resolve();
             })
         );
     }
 
     _addModel( def, response ) {
         this.models[def.name]= def;
+
         if ( /\.vox$/.test(def.file) ) {
-            return response.arrayBuffer().then(ab => this._loadVox(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
+            return response.arrayBuffer().then(ab => this._loadVox(def, ab));
         }
-        // if ( /\.vox$/.test(def.file) ) {
-        //     return response.arrayBuffer().then(ab => this._loadVox2(def, ab)).then(chunk => this.models[def.name].chunk= chunk);
-        // }
+
         if ( /\.png$/.test(def.file) ) {
-            return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob))).then(chunk => this.models[def.name].chunk= chunk);
+            return response.blob().then(blob => this._loadImage(def, URL.createObjectURL(blob)));
         }
+
         return Promise.reject('_addModel: ' + def.file);
     }
 

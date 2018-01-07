@@ -2,7 +2,7 @@
 class TitleModel {
 
     constructor( modelLoader, depth ) {
-        this.model= modelLoader.getModel('mule_title');
+        this.model= modelLoader.getModel('mule_title_0');
         this.chunk= this.model.chunk;
         this.mesh= this.chunk.mesh;
         this.depth= depth;
@@ -66,6 +66,41 @@ class TitleModel {
         this.chunk.build();
     }
 }
+
+
+class Anim {
+
+    constructor( modelLoader, rules ) {
+        this.modelLoader= modelLoader;
+        this.speed= rules.speed;
+        this.rules= rules;
+        this.mesh= undefined;
+        this.ofs= undefined;
+        this.meshes= [];
+    }
+
+    // FIXME: Rename local vars
+    setPos( muleX ) {
+        const muleX8= muleX % this.rules.add;
+
+        const meshNames= this.rules.meshes;
+        const anim= this.rules.anim;
+
+        const n= Math.floor(muleX8 * anim.length / this.rules.add);
+
+        for ( let i= 0; i < meshNames.length; i++ ) {
+            if ( !this.meshes[i] ) {
+                this.meshes[i]= this.modelLoader.getModel(meshNames[i]).chunk.mesh;
+            };
+            this.meshes[i].visible= anim[n][0] == i;
+        }
+
+        this.mesh= this.meshes[anim[n][0]];
+        this.ofs= anim[n][1] - muleX8;
+    }
+};
+
+
 
 class Game {
 
@@ -209,13 +244,22 @@ class Game {
         const scene= this._initScene();
         const camera= this._buildCamera();
 
-        const muleMesh= [
-            [ 0 ], [ 2 ], [ 2 ], [ 4 ], [ 6 ], [ 6 ]
-        ];
-        for ( let i= 0; i < 6; i++ ) {
-            muleMesh[i][1]= this.modelLoader.getModel('mule' + (i + 1)).chunk.mesh;
-        }
+        const anims= {
+            bonzoid: {
+                add: 12,
+                speed: 100,
+                meshes: [ 'char_bonzoid_1', 'char_bonzoid_2', 'char_bonzoid_3' ],
+                anim: [ [ 0, 0 ], [ 2, 4 ], [ 1, 6 ], [ 2, 10 ] ],
+            },
+            mule: {
+                add: 8,
+                speed: 150,
+                meshes: [ 'mule1_0', 'mule2_0', 'mule3_0', 'mule4_0', 'mule5_0', 'mule6_0' ],
+                anim: [ [ 0, 0 ], [ 1, 2 ], [ 2, 2 ], [ 3, 4 ], [ 4, 6 ], [ 5, 6 ] ],
+            },
+        };
 
+        const muleAnim= new Anim(this.modelLoader, anims.bonzoid);
         const titleModel= new TitleModel(this.modelLoader);
 
         const titleMesh= titleModel.mesh;
@@ -237,20 +281,15 @@ class Game {
 
             titleModel.update(t);
 
+            let muleX= (t / muleAnim.speed) % muleRange;
 
-            let muleX= (t / 150) % muleRange;
-            const muleX8= muleX % 8;
-            let n= Math.floor(muleX8 * 6 / 8);
+            muleAnim.setPos(muleX);
+            muleAnim.mesh.position.x= muleX - muleRange * .5 + muleAnim.ofs;
+            muleAnim.mesh.position.z= 5;
 
-            for ( let i= 0; i < 6; i++ ) {
-                muleMesh[i][1].visible= i == n;
-            }
+            muleAnim.mesh.rotation.y= - Math.PI / 2;
 
-            const mesh= muleMesh[n][1];
-            mesh.position.x= muleX - muleRange * .5 - muleX8 + muleMesh[n][0];
-            mesh.position.z= 5;
-
-            let lookAtX_= mesh.position.x;
+            let lookAtX_= muleAnim.mesh.position.x;
             let lookAtY_= 6;
             const muleInRange= lookAtX_ >= -80 && lookAtX_ <= 80;
 

@@ -59,12 +59,14 @@ new Game(GameProxy)
         models: {
             char_bonzoid: { file: "models/char-bonzoid.vox" },
             char_mechtron: { file: "models/char-mechtron.vox" },
+
             mule1: { file: "models/mule1.vox" },
             mule2: { file: "models/mule2.vox" },
             mule3: { file: "models/mule3.vox" },
             mule4: { file: "models/mule4.vox" },
             mule5: { file: "models/mule5.vox" },
             mule6: { file: "models/mule6.vox" },
+
             mule_title: { file: "models/mule-title.png", raw: true },
         }
     })
